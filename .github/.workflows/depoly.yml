@@ -1,0 +1,43 @@
+# Navnet på arbeidsflyten som vises i GitHub Actions-fanen
+name: Deploy to NTNU folk.ntnu.no
+
+# Kriterier for når arbeidsflyten skal kjøre
+on:
+  # Kjør når noen pusher kode til "main"-branchen
+  push:
+    branches: [ main ]
+
+# Definerer jobbene som skal kjøres
+jobs:
+  deploy:
+    # Bruker en fersk versjon av Ubuntu for å kjøre jobben
+    runs-on: ubuntu-latest
+
+    # Definerer stegene i jobben
+    steps:
+      # 1. Steg: Sjekker ut koden fra repoet
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Steg: Laster opp filene til NTNU via SFTP
+      - name: FTP-Deploy-Action
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          # NTNU sin SFTP-server for studenter
+          server: login.stud.ntnu.no
+          
+          # Brukernavn hentet fra GitHub Secrets
+          username: ${{ secrets.NTNU_USERNAME }}
+          
+          # Passord hentet fra GitHub Secrets
+          password: ${{ secrets.NTNU_PASSWORD }}
+          
+          # Mappen på serveren hvor filene skal plasseres
+          # ENDRE 'ditt-brukernavn' TIL DITT FAKTISKE NTNU-BRUKERNAVN!
+          server-dir: /web/folk/ditt-brukernavn/
+
+          # Protokoll (Secure File Transfer Protocol)
+          protocol: sftp
+          
+          # Port for SFTP
+          port: 22
