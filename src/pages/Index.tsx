@@ -25,7 +25,7 @@ const Index = () => {
           </h1>
           
           <p className="text-xl md:text-2xl text-white/90 mb-8 drop-shadow-lg max-w-2xl mx-auto">
-            Medlemsportal for ski touring og freeride entusiaster
+            Internside for turkomitéen i NTNUI Topptur og Frikjøring.
           </p>
           
           <a 
