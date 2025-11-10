@@ -1,10 +1,52 @@
+import { useState, useEffect } from "react";
 import MemberCheck from "@/components/MemberCheck";
+import PrayForSnow from "@/components/PrayForSnow";
+import GlobalPrayOverlay from "@/components/GlobalPrayOverlay";
+
+const PRAYER_COUNT_KEY = "pray_for_snow_count";
 
 const Index = () => {
   const heroImage = "/mainpicture.jpeg";
+  const [showGlobalOverlay, setShowGlobalOverlay] = useState(false);
+  const [prayerCount, setPrayerCount] = useState(0);
+
+  // Load prayer count from localStorage on mount
+  useEffect(() => {
+    try {
+      const savedCount = localStorage.getItem(PRAYER_COUNT_KEY);
+      if (savedCount) {
+        setPrayerCount(parseInt(savedCount, 10));
+      }
+    } catch {
+      // Ignore localStorage errors
+    }
+  }, []);
+
+  const handlePray = () => {
+    // Increment counter
+    const newCount = prayerCount + 1;
+    setPrayerCount(newCount);
+    try {
+      localStorage.setItem(PRAYER_COUNT_KEY, newCount.toString());
+    } catch {
+      // Ignore localStorage errors
+    }
+    // Show global overlay
+    setShowGlobalOverlay(true);
+  };
+
+  const handleOverlayComplete = () => {
+    setShowGlobalOverlay(false);
+  };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen relative">
+      {/* Global Prayer Overlay */}
+      <GlobalPrayOverlay
+        isActive={showGlobalOverlay}
+        onComplete={handleOverlayComplete}
+        prayerCount={prayerCount}
+      />
       {/* Hero Section */}
       <section className="relative h-[70vh] flex items-center justify-center overflow-hidden">
         <div 
@@ -40,6 +82,9 @@ const Index = () => {
       <div id="medlemssjekk">
         <MemberCheck />
       </div>
+
+      {/* Pray for Snow Button and Counter (fixed position) */}
+      <PrayForSnow onPray={handlePray} prayerCount={prayerCount} />
 
       {/* Footer */}
       <footer className="bg-card border-t border-border py-8 px-4">
