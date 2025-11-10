@@ -1,6 +1,4 @@
-import { Mountain } from "lucide-react";
 import MemberCheck from "@/components/MemberCheck";
-import heroImage from "@/assets/hero-mountains.jpg";
 
 const Index = () => {
   return (
@@ -9,14 +7,14 @@ const Index = () => {
       <section className="relative h-[70vh] flex items-center justify-center overflow-hidden">
         <div 
           className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${heroImage})` }}
+          style={{ backgroundImage: `url(/mainphoto.jpeg)` }}
         >
           <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-background" />
         </div>
         
         <div className="relative z-10 text-center px-4 max-w-4xl mx-auto">
           <div className="inline-flex items-center gap-3 mb-6 px-6 py-3 rounded-full bg-white/10 backdrop-blur-sm border border-white/20">
-            <Mountain className="w-6 h-6 text-white" />
+            <img src="/TF-svart(20.10.2021).svg" alt="TF Logo" className="w-6 h-6" />
             <span className="text-white font-medium">NTNUI</span>
           </div>
           
@@ -46,7 +44,7 @@ const Index = () => {
       <footer className="bg-card border-t border-border py-8 px-4">
         <div className="max-w-4xl mx-auto text-center">
           <div className="flex items-center justify-center gap-2 mb-3">
-            <Mountain className="w-5 h-5 text-primary" />
+            <img src="/TF-svart(20.10.2021).svg" alt="TF Logo" className="w-5 h-5" />
             <span className="font-semibold text-foreground">Topptur og Frikjøring NTNUI</span>
           </div>
           <p className="text-sm text-muted-foreground">
