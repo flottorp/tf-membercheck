@@ -1,8 +1,8 @@
-import { Mountain } from "lucide-react";
 import MemberCheck from "@/components/MemberCheck";
-import heroImage from "@/assets/hero-mountains.jpg";
 
 const Index = () => {
+  const heroImage = "/mainpicture.jpeg";
+
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
@@ -15,10 +15,9 @@ const Index = () => {
         </div>
         
         <div className="relative z-10 text-center px-4 max-w-4xl mx-auto">
-          <div className="inline-flex items-center gap-3 mb-6 px-6 py-3 rounded-full bg-white/10 backdrop-blur-sm border border-white/20">
-            <Mountain className="w-6 h-6 text-white" />
-            <span className="text-white font-medium">NTNUI</span>
-          </div>
+        <div className="inline-flex items-center gap-3 mb-6 px-6 py-3 rounded-full bg-white/10 backdrop-blur-sm border border-white/20">
+          <span className="text-white font-medium">NTNUI</span>
+        </div>
           
           <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 drop-shadow-2xl">
             Topptur og Frikjøring
@@ -46,7 +45,11 @@ const Index = () => {
       <footer className="bg-card border-t border-border py-8 px-4">
         <div className="max-w-4xl mx-auto text-center">
           <div className="flex items-center justify-center gap-2 mb-3">
-            <Mountain className="w-5 h-5 text-primary" />
+            <img
+              src="/ntnui-logo-liten.png"
+              alt="NTNUI logo"
+              className="h-6 w-auto"
+            />
             <span className="font-semibold text-foreground">Topptur og Frikjøring NTNUI</span>
           </div>
           <p className="text-sm text-muted-foreground">
