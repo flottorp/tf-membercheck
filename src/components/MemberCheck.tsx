@@ -20,7 +20,6 @@ interface MemberResult {
 
 const MemberCheck = () => {
   const [file, setFile] = useState<File | null>(null);
-  const [password, setPassword] = useState<string>("");
   const [results, setResults] = useState<MemberResult[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState<{ completed: number; total: number } | null>(null);
@@ -46,8 +45,8 @@ const MemberCheck = () => {
   };
 
   const handleUpload = async () => {
-    if (!file || !password) {
-      setError("Vennligst last opp en CSV-fil og skriv inn passord");
+    if (!file) {
+      setError("Vennligst last opp en CSV-fil");
       return;
     }
     
@@ -73,7 +72,6 @@ const MemberCheck = () => {
       // Batch check membership
       const apiResults = await batchCheckMembership(
         phoneNumbers,
-        password,
         (completed, total) => {
           setProgress({ completed, total });
         }
@@ -136,22 +134,6 @@ const MemberCheck = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Password Input */}
-            <div className="space-y-2">
-              <Label htmlFor="password">NTNUI API Passord</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Skriv inn passord for NTNUI API"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={isProcessing}
-              />
-              <p className="text-xs text-muted-foreground">
-                Dette passordet brukes til å autentisere mot NTNUI API for hver telefonnummer
-              </p>
-            </div>
-
             {/* File Upload */}
             <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary/50 transition-colors">
               <input
@@ -205,19 +187,12 @@ const MemberCheck = () => {
             {file && (
               <Button
                 onClick={handleUpload}
-                disabled={isProcessing || !password}
+                disabled={isProcessing}
                 className="w-full bg-gradient-to-r from-primary to-primary/90 hover:opacity-90"
                 size="lg"
               >
-                {isProcessing ? "Behandler..." : password ? "Sjekk medlemskap" : "Skriv inn passord først"}
+                {isProcessing ? "Behandler..." : "Sjekk medlemskap"}
               </Button>
-            )}
-
-            {/* Debug info - remove this after testing */}
-            {file && (
-              <div className="text-xs text-muted-foreground">
-                Debug: Fil lastet opp: {file.name} | Passord oppgitt: {password ? "Ja" : "Nei"}
-              </div>
             )}
 
             {results.length > 0 && (
@@ -243,6 +218,14 @@ const MemberCheck = () => {
                             {result.phone}
                           </span>
                         )}
+                        {result.memberInfo?.date_paid && (
+                          <span className="text-xs text-muted-foreground">
+                            Kjøpt: {new Date(result.memberInfo.date_paid).toLocaleDateString('nb-NO')}
+                            {result.memberInfo.total_memberships > 1 && 
+                              ` (${result.memberInfo.total_memberships} totale kjøp)`
+                            }
+                          </span>
+                        )}
                         {result.error && (
                           <span className="text-xs text-destructive">
                             {result.error}
@@ -254,7 +237,14 @@ const MemberCheck = () => {
                           <>
                             <CheckCircle className="w-5 h-5 text-green-500" />
                             <span className="text-sm text-green-600 dark:text-green-400 font-medium">
-                              Medlem
+                              Gyldig medlem
+                            </span>
+                          </>
+                        ) : result.memberInfo?.membership_status === 'expired' ? (
+                          <>
+                            <AlertCircle className="w-5 h-5 text-orange-500" />
+                            <span className="text-sm text-orange-600 dark:text-orange-400 font-medium">
+                              Utgått medlemskap
                             </span>
                           </>
                         ) : (
@@ -272,18 +262,24 @@ const MemberCheck = () => {
                 
                 {/* Summary Statistics */}
                 <div className="mt-4 p-4 bg-muted/30 rounded-lg">
-                  <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="grid grid-cols-3 gap-4 text-sm">
                     <div className="text-center">
                       <div className="text-2xl font-bold text-green-600 dark:text-green-400">
                         {results.filter(r => r.isMember).length}
                       </div>
-                      <div className="text-muted-foreground">Medlemmer</div>
+                      <div className="text-muted-foreground">Gyldige</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                        {results.filter(r => !r.isMember && r.memberInfo?.membership_status === 'expired').length}
+                      </div>
+                      <div className="text-muted-foreground">Utgått</div>
                     </div>
                     <div className="text-center">
                       <div className="text-2xl font-bold text-destructive">
-                        {results.filter(r => !r.isMember).length}
+                        {results.filter(r => !r.isMember && r.memberInfo?.membership_status !== 'expired').length}
                       </div>
-                      <div className="text-muted-foreground">Ikke medlemmer</div>
+                      <div className="text-muted-foreground">Aldri medlem</div>
                     </div>
                   </div>
                 </div>
