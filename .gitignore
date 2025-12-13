@@ -23,3 +23,9 @@ dist-ssr
 *.sln
 *.sw?¨
 .env
+.test-members.csv
+
+# Vercel
+.vercel
+.vercel/*
+*.vercel.app
