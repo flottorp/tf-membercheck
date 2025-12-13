@@ -36,6 +36,37 @@ npm i
 npm run dev
 ```
 
+## Testing lokalt med API
+
+Dette prosjektet bruker serverless functions for backend API. For å teste lokalt:
+
+### Alternativ 1: Bruk Flask backend (enklest for utvikling)
+
+```sh
+# Terminal 1: Start Flask API
+python backend/api/tfMemberAPI.py
+
+# Terminal 2: Start frontend
+npm run dev
+```
+
+Åpne `http://localhost:5173` i nettleseren.
+
+### Alternativ 2: Bruk Vercel Dev (samme miljø som produksjon)
+
+```sh
+# Start både frontend og API sammen
+vercel dev --listen 3000
+```
+
+Følg Vercel CLI instruksjonene for første gang setup. Vercel Dev starter både frontend og API functions lokalt.
+
+**Viktig:** Sørg for at `.env` filen i rotmappen inneholder:
+```
+consumer_key=din_woocommerce_key
+consumer_secret=din_woocommerce_secret
+```
+
 **Edit a file directly in GitHub**
 
 - Navigate to the desired file(s).

@@ -15,60 +15,47 @@ export interface ApiResponse {
 }
 
 /**
- * Checks membership status for a given phone number using NTNUI API
+ * Checks membership status for a given phone number using TF Member API
  */
 export const checkMembership = async (
-  phone: string, 
-  password: string
+  phone: string
 ): Promise<ApiResponse> => {
   try {
-    const url = "https://api.ntnui.no/users/profile/";
-    
-    // Create basic auth header
-    const auth = btoa(`${phone}:${password}`);
+    const url = "/api/check-membership";
     
     const response = await fetch(url, {
-      method: 'GET',
+      method: 'POST',
       headers: {
-        'Authorization': `Basic ${auth}`,
         'Content-Type': 'application/json',
       },
+      body: JSON.stringify({ phone })
     });
 
-    if (!response.ok) {
-      // Handle different HTTP status codes
-      if (response.status === 401) {
-        return {
-          success: false,
-          error: 'Invalid credentials (phone number or password)',
-          status: response.status
-        };
-      } else if (response.status === 403) {
-        return {
-          success: false,
-          error: 'Access forbidden - user may not be a member',
-          status: response.status
-        };
-      } else if (response.status === 404) {
-        return {
-          success: false,
-          error: 'User not found',
-          status: response.status
-        };
-      } else {
-        return {
-          success: false,
-          error: `API request failed with status ${response.status}`,
-          status: response.status
-        };
-      }
+    // Sjekk om response er tom
+    const contentType = response.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+      const text = await response.text();
+      console.error('Non-JSON response:', text);
+      return {
+        success: false,
+        error: `Server returned non-JSON response: ${text.substring(0, 100)}`,
+        status: response.status
+      };
     }
 
     const data = await response.json();
-    
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: data.error || `Request failed with status ${response.status}`,
+        status: response.status
+      };
+    }
+
     return {
       success: true,
-      data: data,
+      data: data.data,
       status: response.status
     };
 
@@ -86,32 +73,80 @@ export const checkMembership = async (
  */
 export const batchCheckMembership = async (
   phoneNumbers: string[],
-  password: string,
   onProgress?: (completed: number, total: number) => void
 ): Promise<Map<string, ApiResponse>> => {
   const results = new Map<string, ApiResponse>();
   
-  for (let i = 0; i < phoneNumbers.length; i++) {
-    const phone = phoneNumbers[i];
+  try {
+    // Bruk batch endpoint for bedre ytelse
+    const url = "/api/batch-check-membership";
     
-    try {
-      const result = await checkMembership(phone, password);
-      results.set(phone, result);
-    } catch (error) {
-      results.set(phone, {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error occurred'
-      });
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ phones: phoneNumbers })
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      console.error('Batch request failed:', response.status, text);
+      throw new Error(`Batch request failed with status ${response.status}: ${text.substring(0, 100)}`);
     }
-    
-    // Call progress callback if provided
-    if (onProgress) {
-      onProgress(i + 1, phoneNumbers.length);
+
+    // Sjekk om response er JSON
+    const contentType = response.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+      const text = await response.text();
+      console.error('Non-JSON batch response:', text);
+      throw new Error(`Server returned non-JSON response: ${text.substring(0, 100)}`);
     }
+
+    const data = await response.json();
     
-    // Add a small delay to avoid overwhelming the API
-    if (i < phoneNumbers.length - 1) {
-      await new Promise(resolve => setTimeout(resolve, 100));
+    // Konverter resultatene til Map
+    phoneNumbers.forEach((phone, index) => {
+      const phoneResult = data[phone];
+      if (phoneResult) {
+        results.set(phone, phoneResult);
+      } else {
+        results.set(phone, {
+          success: false,
+          error: 'No response for this phone number'
+        });
+      }
+      
+      // Oppdater progress
+      if (onProgress) {
+        onProgress(index + 1, phoneNumbers.length);
+      }
+    });
+    
+  } catch (error) {
+    // Fallback til enkeltvis sjekk hvis batch feiler
+    console.error('Batch check failed, falling back to individual checks:', error);
+    
+    for (let i = 0; i < phoneNumbers.length; i++) {
+      const phone = phoneNumbers[i];
+      
+      try {
+        const result = await checkMembership(phone);
+        results.set(phone, result);
+      } catch (error) {
+        results.set(phone, {
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error occurred'
+        });
+      }
+      
+      if (onProgress) {
+        onProgress(i + 1, phoneNumbers.length);
+      }
+      
+      if (i < phoneNumbers.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
     }
   }
   
