@@ -1,11 +1,1 @@
-{
-  "functions": {
-    "api/**/*.ts": {
-      "runtime": "@vercel/node@3.0.0"
-    }
-  },
-  "env": {
-    "consumer_key": "@consumer_key",
-    "consumer_secret": "@consumer_secret"
-  }
-}
+{}
