@@ -38,25 +38,11 @@ npm run dev
 
 ## Testing lokalt med API
 
-Dette prosjektet bruker serverless functions for backend API. For å teste lokalt:
-
-### Alternativ 1: Bruk Flask backend (enklest for utvikling)
-
-```sh
-# Terminal 1: Start Flask API
-python backend/api/tfMemberAPI.py
-
-# Terminal 2: Start frontend
-npm run dev
-```
-
-Åpne `http://localhost:5173` i nettleseren.
-
-### Alternativ 2: Bruk Vercel Dev (samme miljø som produksjon)
+Dette prosjektet bruker Vercel serverless functions for backend API. For å teste lokalt:
 
 ```sh
 # Start både frontend og API sammen
-vercel dev --listen 3000
+vercel dev
 ```
 
 Følg Vercel CLI instruksjonene for første gang setup. Vercel Dev starter både frontend og API functions lokalt.
