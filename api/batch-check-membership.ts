@@ -138,11 +138,9 @@ async function getOrders(productId: number = 4223, useCache: boolean = true): Pr
   }
 }
 
-function createMemberDict(ordersList: OrderData[]): MemberDict {
+function createMemberDict(ordersList: OrderData[], checkYear: number): MemberDict {
   const startTime = Date.now();
   const memberDict: MemberDict = {};
-  const oneYearAgo = new Date();
-  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
   
   for (const order of ordersList) {
     const phone = order.billing?.phone || '';
@@ -157,9 +155,10 @@ function createMemberDict(ordersList: OrderData[]): MemberDict {
       // Normaliser telefonnummer for konsistent matching
       const normalizedPhone = normalizePhoneNumber(phone);
       
-      // Sjekk om medlemskapet er gyldig (innen siste 365 dager)
+      // Sjekk om medlemskapet er gyldig for valgt år (kun året det ble kjøpt)
       const paidDate = new Date(datePaid);
-      const isValid = paidDate >= oneYearAgo;
+      const purchaseYear = paidDate.getFullYear();
+      const isValid = purchaseYear === checkYear;
       
       const membership: MembershipRecord = {
         firstName,
@@ -211,7 +210,7 @@ export default async function handler(
   }
   
   try {
-    const { phones } = req.body;
+    const { phones, year } = req.body;
     
     if (!phones || !Array.isArray(phones)) {
       return res.status(400).json({
@@ -220,11 +219,14 @@ export default async function handler(
       });
     }
     
-    console.log(`🔍 Sjekker ${phones.length} telefonnumre...`);
+    // Default til nåværende år hvis ikke spesifisert
+    const checkYear = year || new Date().getFullYear();
+    
+    console.log(`🔍 Sjekker ${phones.length} telefonnumre for året ${checkYear}...`);
     
     // Hent alle ordre én gang
     const ordersList = await getOrders();
-    const memberDict = createMemberDict(ordersList);
+    const memberDict = createMemberDict(ordersList, checkYear);
     
     // 🚀 OPTIMALISERING: O(n) lookup istedenfor O(n×m)
     const lookupStartTime = Date.now();
