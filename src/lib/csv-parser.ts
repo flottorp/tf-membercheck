@@ -5,6 +5,7 @@ export interface CSVRow {
 export interface ParsedMemberData {
   phone: string;
   name?: string;
+  email?: string;
   [key: string]: string | undefined;
 }
 
@@ -32,6 +33,12 @@ export const parseCSV = (csvContent: string): ParsedMemberData[] => {
   const results: ParsedMemberData[] = [];
   
   for (let i = 1; i < lines.length; i++) {
+    // Skip empty lines
+    const trimmedLine = lines[i].trim();
+    if (!trimmedLine) {
+      continue;
+    }
+    
     const row = parseCSVLine(lines[i]);
     if (row.length !== headers.length) {
       console.warn(`Row ${i + 1} has ${row.length} columns but header has ${headers.length}. Skipping.`);
@@ -47,13 +54,54 @@ export const parseCSV = (csvContent: string): ParsedMemberData[] => {
     // Create object with all columns
     const memberData: ParsedMemberData = { phone };
     
+    // Find first name and last name columns
+    let firstNameCol = -1;
+    let lastNameCol = -1;
+    let emailCol = -1;
+    
     headers.forEach((header, index) => {
       const cleanHeader = header.trim().toLowerCase();
-      if (cleanHeader.includes('name') || cleanHeader.includes('navn')) {
-        memberData.name = row[index];
-      }
+      
+      // Store all column data
       memberData[header.trim()] = row[index];
+      
+      // Find first name column
+      if (cleanHeader.includes('first name') || cleanHeader.includes('fornavn')) {
+        firstNameCol = index;
+      }
+      
+      // Find last name column
+      if (cleanHeader.includes('last name') || cleanHeader.includes('etternavn')) {
+        lastNameCol = index;
+      }
+      
+      // Find email column
+      if (cleanHeader.includes('email') || cleanHeader.includes('e-post')) {
+        emailCol = index;
+      }
     });
+    
+    // Combine first name and last name
+    const firstName = firstNameCol >= 0 ? row[firstNameCol]?.trim() : '';
+    const lastName = lastNameCol >= 0 ? row[lastNameCol]?.trim() : '';
+    if (firstName || lastName) {
+      memberData.name = `${firstName} ${lastName}`.trim();
+    } else {
+      // Fallback: look for any name column
+      headers.forEach((header, index) => {
+        const cleanHeader = header.trim().toLowerCase();
+        if ((cleanHeader.includes('name') || cleanHeader.includes('navn')) && !cleanHeader.includes('first') && !cleanHeader.includes('last')) {
+          if (!memberData.name) {
+            memberData.name = row[index]?.trim();
+          }
+        }
+      });
+    }
+    
+    // Extract email
+    if (emailCol >= 0) {
+      memberData.email = row[emailCol]?.trim();
+    }
 
     results.push(memberData);
   }

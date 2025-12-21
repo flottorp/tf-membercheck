@@ -73,7 +73,8 @@ export const checkMembership = async (
  */
 export const batchCheckMembership = async (
   phoneNumbers: string[],
-  onProgress?: (completed: number, total: number) => void
+  onProgress?: (completed: number, total: number) => void,
+  year?: number
 ): Promise<Map<string, ApiResponse>> => {
   const results = new Map<string, ApiResponse>();
   
@@ -86,7 +87,7 @@ export const batchCheckMembership = async (
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ phones: phoneNumbers })
+      body: JSON.stringify({ phones: phoneNumbers, year: year || new Date().getFullYear() })
     });
 
     if (!response.ok) {
