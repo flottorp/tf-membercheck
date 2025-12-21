@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Upload, CheckCircle, XCircle, Users, AlertCircle } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Upload, CheckCircle, XCircle, Users, AlertCircle, Mail, Copy, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import { batchCheckMembership, ApiResponse } from "@/lib/ntnui-api";
 interface MemberResult {
   phone: string;
   name?: string;
+  email?: string;
   isMember: boolean;
   memberInfo?: any;
   error?: string;
@@ -24,6 +25,34 @@ const MemberCheck = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState<{ completed: number; total: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [isFetchingData, setIsFetchingData] = useState(false);
+  const [elapsedTime, setElapsedTime] = useState(0);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const startTimeRef = useRef<number | null>(null);
+
+  // Timer for elapsed time
+  useEffect(() => {
+    if (isFetchingData && startTimeRef.current) {
+      timerRef.current = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - startTimeRef.current!) / 1000);
+        setElapsedTime(elapsed);
+      }, 100);
+    } else {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      setElapsedTime(0);
+      startTimeRef.current = null;
+    }
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [isFetchingData]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -38,6 +67,8 @@ const MemberCheck = () => {
         setResults([]);
         setError(null);
         setProgress(null);
+        setIsFetchingData(false);
+        setElapsedTime(0);
       } else {
         setError("Vennligst last opp en CSV-fil (.csv)");
       }
@@ -54,6 +85,9 @@ const MemberCheck = () => {
     setError(null);
     setResults([]);
     setProgress(null);
+    setIsFetchingData(true);
+    setElapsedTime(0);
+    startTimeRef.current = Date.now();
     
     try {
       // Read and parse CSV file
@@ -63,6 +97,7 @@ const MemberCheck = () => {
       if (parsedData.length === 0) {
         setError("Ingen gyldige telefonnumre funnet i CSV-filen");
         setIsProcessing(false);
+        setIsFetchingData(false);
         return;
       }
       
@@ -74,8 +109,12 @@ const MemberCheck = () => {
         phoneNumbers,
         (completed, total) => {
           setProgress({ completed, total });
-        }
+        },
+        selectedYear
       );
+      
+      // Data hentet, stopp fetch indicator
+      setIsFetchingData(false);
       
       // Process results
       const memberResults: MemberResult[] = parsedData.map(row => {
@@ -85,6 +124,7 @@ const MemberCheck = () => {
           return {
             phone: row.phone,
             name: row.name,
+            email: row.email,
             isMember: false,
             error: "No API response received"
           };
@@ -94,6 +134,7 @@ const MemberCheck = () => {
           return {
             phone: row.phone,
             name: row.name || apiResponse.data?.name,
+            email: row.email,
             isMember: true,
             memberInfo: apiResponse.data,
             apiResponse
@@ -102,9 +143,11 @@ const MemberCheck = () => {
           return {
             phone: row.phone,
             name: row.name,
+            email: row.email,
             isMember: false,
             error: apiResponse.error,
-            apiResponse
+            apiResponse: apiResponse,
+            memberInfo: apiResponse.data // Kan inneholde date_paid selv om ikke gyldig
           };
         }
       });
@@ -114,6 +157,7 @@ const MemberCheck = () => {
     } catch (err) {
       console.error('Error processing CSV:', err);
       setError(err instanceof Error ? err.message : 'En feil oppstod under behandling av filen');
+      setIsFetchingData(false);
     } finally {
       setIsProcessing(false);
       setProgress(null);
@@ -134,6 +178,29 @@ const MemberCheck = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
+            {/* Year Selector */}
+            <div className="flex items-center gap-3">
+              <Label htmlFor="year-select" className="whitespace-nowrap">
+                Sjekk medlemskap for år:
+              </Label>
+              <select
+                id="year-select"
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(parseInt(e.target.value, 10))}
+                disabled={isProcessing}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {Array.from({ length: 10 }, (_, i) => {
+                  const year = new Date().getFullYear() - i;
+                  return (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+
             {/* File Upload */}
             <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary/50 transition-colors">
               <input
@@ -167,6 +234,28 @@ const MemberCheck = () => {
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
+            {/* Fetching Data Indicator */}
+            {isFetchingData && !progress && (
+              <Alert className="border-primary/50 bg-primary/5">
+                <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                <AlertDescription className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">Henter medlemskap fra webshop...</span>
+                    {elapsedTime > 0 && (
+                      <span className="text-xs text-muted-foreground">({elapsedTime}s)</span>
+                    )}
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Det kan ta opptil 5 minutter ved første hentering. Data blir cachet i 5 minutter for raskere søk neste gang.
+                  </p>
+                  <Progress 
+                    value={undefined} 
+                    className="w-full"
+                  />
+                </AlertDescription>
               </Alert>
             )}
 
@@ -218,7 +307,7 @@ const MemberCheck = () => {
                             {result.phone}
                           </span>
                         )}
-                        {result.memberInfo?.date_paid && (
+                        {result.isMember && result.memberInfo?.date_paid && (
                           <span className="text-xs text-muted-foreground">
                             Kjøpt: {new Date(result.memberInfo.date_paid).toLocaleDateString('nb-NO')}
                             {result.memberInfo.total_memberships > 1 && 
@@ -226,33 +315,44 @@ const MemberCheck = () => {
                             }
                           </span>
                         )}
-                        {result.error && (
+                        {!result.isMember && result.memberInfo?.date_paid && (
+                          <span className="text-xs text-orange-600 dark:text-orange-400">
+                            Kjøpt: {new Date(result.memberInfo.date_paid).toLocaleDateString('nb-NO')}
+                          </span>
+                        )}
+                        {!result.isMember && !result.memberInfo?.date_paid && (
                           <span className="text-xs text-destructive">
-                            {result.error}
+                            Ikke gyldig
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-col items-end gap-1">
                         {result.isMember ? (
                           <>
-                            <CheckCircle className="w-5 h-5 text-green-500" />
-                            <span className="text-sm text-green-600 dark:text-green-400 font-medium">
-                              Gyldig medlem
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <CheckCircle className="w-5 h-5 text-green-500" />
+                              <span className="text-sm text-green-600 dark:text-green-400 font-medium">
+                                Gyldig medlem
+                              </span>
+                            </div>
                           </>
-                        ) : result.memberInfo?.membership_status === 'expired' ? (
+                        ) : result.memberInfo?.date_paid ? (
                           <>
-                            <AlertCircle className="w-5 h-5 text-orange-500" />
-                            <span className="text-sm text-orange-600 dark:text-orange-400 font-medium">
-                              Utgått medlemskap
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <AlertCircle className="w-5 h-5 text-orange-500" />
+                              <span className="text-sm text-orange-600 dark:text-orange-400 font-medium">
+                                Utgått medlemskap
+                              </span>
+                            </div>
                           </>
                         ) : (
                           <>
-                            <XCircle className="w-5 h-5 text-destructive" />
-                            <span className="text-sm text-destructive font-medium">
-                              Ikke medlem
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <XCircle className="w-5 h-5 text-destructive" />
+                              <span className="text-sm text-destructive font-medium">
+                                Aldri medlem
+                              </span>
+                            </div>
                           </>
                         )}
                       </div>
@@ -271,18 +371,59 @@ const MemberCheck = () => {
                     </div>
                     <div className="text-center">
                       <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-                        {results.filter(r => !r.isMember && r.memberInfo?.membership_status === 'expired').length}
+                        {results.filter(r => !r.isMember && r.memberInfo?.date_paid).length}
                       </div>
                       <div className="text-muted-foreground">Utgått</div>
                     </div>
                     <div className="text-center">
                       <div className="text-2xl font-bold text-destructive">
-                        {results.filter(r => !r.isMember && r.memberInfo?.membership_status !== 'expired').length}
+                        {results.filter(r => !r.isMember && !r.memberInfo?.date_paid).length}
                       </div>
                       <div className="text-muted-foreground">Aldri medlem</div>
                     </div>
                   </div>
                 </div>
+
+                {/* Email list for non-members */}
+                {(() => {
+                  const nonMembers = results.filter(r => !r.isMember && r.email);
+                  
+                  if (nonMembers.length > 0) {
+                    const emails = nonMembers.map(r => r.email).filter((email): email is string => !!email);
+                    const emailList = emails.join('; ');
+                    
+                    return (
+                      <div className="mt-4 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+                        <div className="flex items-start gap-3">
+                          <Mail className="w-5 h-5 text-destructive mt-0.5 flex-shrink-0" />
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-destructive mb-2">
+                              E-poster for medlemmer uten gyldig medlemskap ({nonMembers.length})
+                            </h4>
+                            <div className="bg-background p-3 rounded border border-border/50 mb-2">
+                              <p className="text-sm text-muted-foreground break-all">{emailList}</p>
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                navigator.clipboard.writeText(emailList);
+                              }}
+                              className="w-full"
+                            >
+                              <Copy className="w-4 h-4 mr-2" />
+                              Kopier alle e-poster
+                            </Button>
+                            <p className="text-xs text-muted-foreground mt-2">
+                              E-postene er separert med semikolon (;) og kan kopieres direkte til e-postklient.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
             )}
           </CardContent>
