@@ -2,8 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import { Upload, CheckCircle, XCircle, Users, AlertCircle, Mail, Copy, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { parseCSV, ParsedMemberData } from "@/lib/csv-parser";
@@ -25,7 +23,6 @@ const MemberCheck = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState<{ completed: number; total: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [isFetchingData, setIsFetchingData] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -109,8 +106,7 @@ const MemberCheck = () => {
         phoneNumbers,
         (completed, total) => {
           setProgress({ completed, total });
-        },
-        selectedYear
+        }
       );
       
       // Data hentet, stopp fetch indicator
@@ -178,29 +174,6 @@ const MemberCheck = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Year Selector */}
-            <div className="flex items-center gap-3">
-              <Label htmlFor="year-select" className="whitespace-nowrap">
-                Sjekk medlemskap for år:
-              </Label>
-              <select
-                id="year-select"
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(parseInt(e.target.value, 10))}
-                disabled={isProcessing}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {Array.from({ length: 10 }, (_, i) => {
-                  const year = new Date().getFullYear() - i;
-                  return (
-                    <option key={year} value={year}>
-                      {year}
-                    </option>
-                  );
-                })}
-              </select>
-            </div>
-
             {/* File Upload */}
             <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary/50 transition-colors">
               <input
@@ -320,9 +293,18 @@ const MemberCheck = () => {
                             Kjøpt: {new Date(result.memberInfo.date_paid).toLocaleDateString('nb-NO')}
                           </span>
                         )}
-                        {!result.isMember && !result.memberInfo?.date_paid && (
+                        {!result.isMember && !result.memberInfo?.date_paid && result.apiResponse?.data && (
                           <span className="text-xs text-destructive">
-                            Ikke gyldig
+                            {!result.apiResponse.data.tf_valid && !result.apiResponse.data.ntnui_valid
+                              ? 'Mangler TF + NTNUI'
+                              : !result.apiResponse.data.tf_valid
+                              ? 'Mangler TF'
+                              : 'Mangler NTNUI'}
+                          </span>
+                        )}
+                        {!result.isMember && !result.memberInfo?.date_paid && !result.apiResponse?.data && (
+                          <span className="text-xs text-destructive">
+                            Ikke funnet
                           </span>
                         )}
                       </div>
@@ -345,12 +327,25 @@ const MemberCheck = () => {
                               </span>
                             </div>
                           </>
+                        ) : result.apiResponse?.data ? (
+                          <>
+                            <div className="flex items-center gap-2">
+                              <XCircle className="w-5 h-5 text-destructive" />
+                              <span className="text-sm text-destructive font-medium">
+                                {!result.apiResponse.data.tf_valid && !result.apiResponse.data.ntnui_valid
+                                  ? 'Mangler TF + NTNUI'
+                                  : !result.apiResponse.data.tf_valid
+                                  ? 'Mangler TF'
+                                  : 'Mangler NTNUI'}
+                              </span>
+                            </div>
+                          </>
                         ) : (
                           <>
                             <div className="flex items-center gap-2">
                               <XCircle className="w-5 h-5 text-destructive" />
                               <span className="text-sm text-destructive font-medium">
-                                Aldri medlem
+                                Ikke funnet
                               </span>
                             </div>
                           </>
