@@ -1,6 +1,6 @@
-# NTNUI topptur og Frikjoring Member Check
+# NTNUI Topptur og Frikjøring Member Check
 
-A web application for checking NTNUI membership status.
+A web application for checking NTNUI Topptur og Frikjøring membership status.
 
 ## Setup
 
@@ -24,10 +24,17 @@ vercel dev
 
 **Environment variables:** Create a `.env` file in the root directory:
 ```
-consumer_key=your_woocommerce_key
-consumer_secret=your_woocommerce_secret
+fast_api_key_user=your_fastapi_key
 VITE_APP_PASSWORD=your_vite_app_password
 ```
+
+## API
+
+The application uses the TF FastAPI backend to check membership:
+
+- **Endpoint:** `POST /api/check-ntnui-tf-memebership`
+- **Request body:** `{ phones: ["12345678", ...] }`
+- **Response:** Membership status for each phone number including `tf_valid` and `ntnui_valid` flags
 
 ## Technologies
 

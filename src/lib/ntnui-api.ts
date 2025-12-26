@@ -73,21 +73,20 @@ export const checkMembership = async (
  */
 export const batchCheckMembership = async (
   phoneNumbers: string[],
-  onProgress?: (completed: number, total: number) => void,
-  year?: number
+  onProgress?: (completed: number, total: number) => void
 ): Promise<Map<string, ApiResponse>> => {
   const results = new Map<string, ApiResponse>();
   
   try {
-    // Bruk batch endpoint for bedre ytelse
-    const url = "/api/batch-check-membership";
+    // Bruk det nye API-endpointet som sjekker via FastAPI
+    const url = "/api/check-ntnui-tf-memebership";
     
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ phones: phoneNumbers, year: year || new Date().getFullYear() })
+      body: JSON.stringify({ phones: phoneNumbers })
     });
 
     if (!response.ok) {
