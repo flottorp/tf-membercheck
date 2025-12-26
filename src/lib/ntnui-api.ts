@@ -76,60 +76,20 @@ export const batchCheckMembership = async (
   onProgress?: (completed: number, total: number) => void
 ): Promise<Map<string, ApiResponse>> => {
   const results = new Map<string, ApiResponse>();
-  
-  try {
-    // Bruk det nye API-endpointet som sjekker via FastAPI
-    const url = "/api/check-ntnui-tf-memebership";
-    
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ phones: phoneNumbers })
-    });
+  const total = phoneNumbers.length;
+  const url = "/api/check-ntnui-tf-memebership";
+  const CHUNK_SIZE = 50;
+  let completed = 0;
 
-    if (!response.ok) {
-      const text = await response.text();
-      console.error('Batch request failed:', response.status, text);
-      throw new Error(`Batch request failed with status ${response.status}: ${text.substring(0, 100)}`);
+  const updateProgress = () => {
+    if (onProgress) {
+      onProgress(completed, total);
     }
+  };
 
-    // Sjekk om response er JSON
-    const contentType = response.headers.get("content-type");
-    if (!contentType || !contentType.includes("application/json")) {
-      const text = await response.text();
-      console.error('Non-JSON batch response:', text);
-      throw new Error(`Server returned non-JSON response: ${text.substring(0, 100)}`);
-    }
-
-    const data = await response.json();
-    
-    // Konverter resultatene til Map
-    phoneNumbers.forEach((phone, index) => {
-      const phoneResult = data[phone];
-      if (phoneResult) {
-        results.set(phone, phoneResult);
-      } else {
-        results.set(phone, {
-          success: false,
-          error: 'No response for this phone number'
-        });
-      }
-      
-      // Oppdater progress
-      if (onProgress) {
-        onProgress(index + 1, phoneNumbers.length);
-      }
-    });
-    
-  } catch (error) {
-    // Fallback til enkeltvis sjekk hvis batch feiler
-    console.error('Batch check failed, falling back to individual checks:', error);
-    
-    for (let i = 0; i < phoneNumbers.length; i++) {
-      const phone = phoneNumbers[i];
-      
+  const fallbackToSingleChecks = async (chunk: string[]) => {
+    for (let i = 0; i < chunk.length; i++) {
+      const phone = chunk[i];
       try {
         const result = await checkMembership(phone);
         results.set(phone, result);
@@ -139,15 +99,69 @@ export const batchCheckMembership = async (
           error: error instanceof Error ? error.message : 'Unknown error occurred'
         });
       }
-      
-      if (onProgress) {
-        onProgress(i + 1, phoneNumbers.length);
-      }
-      
-      if (i < phoneNumbers.length - 1) {
+
+      completed += 1;
+      updateProgress();
+
+      if (i < chunk.length - 1) {
         await new Promise(resolve => setTimeout(resolve, 100));
       }
     }
+  };
+
+  const processChunk = async (chunk: string[]) => {
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ phones: chunk })
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        console.error('Batch request failed:', response.status, text);
+        throw new Error(`Batch request failed with status ${response.status}: ${text.substring(0, 100)}`);
+      }
+
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await response.text();
+        console.error('Non-JSON batch response:', text);
+        throw new Error(`Server returned non-JSON response: ${text.substring(0, 100)}`);
+      }
+
+      const data = await response.json();
+
+      chunk.forEach(phone => {
+        const phoneResult = data[phone];
+        if (phoneResult) {
+          results.set(phone, phoneResult);
+        } else {
+          results.set(phone, {
+            success: false,
+            error: 'No response for this phone number'
+          });
+        }
+
+        completed += 1;
+        updateProgress();
+      });
+    } catch (error) {
+      console.error('Batch chunk failed, falling back to individual checks:', error);
+      await fallbackToSingleChecks(chunk);
+    }
+  };
+
+  if (total === 0) {
+    updateProgress();
+    return results;
+  }
+
+  for (let i = 0; i < total; i += CHUNK_SIZE) {
+    const chunk = phoneNumbers.slice(i, i + CHUNK_SIZE);
+    await processChunk(chunk);
   }
   
   return results;

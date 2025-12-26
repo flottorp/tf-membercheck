@@ -81,7 +81,6 @@ const MemberCheck = () => {
     setIsProcessing(true);
     setError(null);
     setResults([]);
-    setProgress(null);
     setIsFetchingData(true);
     setElapsedTime(0);
     startTimeRef.current = Date.now();
@@ -97,6 +96,8 @@ const MemberCheck = () => {
         setIsFetchingData(false);
         return;
       }
+      
+      setProgress({ completed: 0, total: parsedData.length });
       
       // Extract phone numbers
       const phoneNumbers = parsedData.map(row => row.phone);
@@ -236,11 +237,11 @@ const MemberCheck = () => {
             {progress && (
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span>Behandler medlemmer...</span>
+                  <span>Sjekker medlemskap...</span>
                   <span>{progress.completed} / {progress.total}</span>
                 </div>
                 <Progress 
-                  value={(progress.completed / progress.total) * 100} 
+                  value={progress.total > 0 ? (progress.completed / progress.total) * 100 : 0} 
                   className="w-full"
                 />
               </div>
