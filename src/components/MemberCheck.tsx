@@ -144,7 +144,7 @@ const MemberCheck = () => {
             isMember: false,
             error: apiResponse.error,
             apiResponse: apiResponse,
-            memberInfo: apiResponse.data // Kan inneholde date_paid selv om ikke gyldig
+            memberInfo: apiResponse.data
           };
         }
       });
@@ -281,20 +281,7 @@ const MemberCheck = () => {
                             {result.phone}
                           </span>
                         )}
-                        {result.isMember && result.memberInfo?.date_paid && (
-                          <span className="text-xs text-muted-foreground">
-                            Kjøpt: {new Date(result.memberInfo.date_paid).toLocaleDateString('nb-NO')}
-                            {result.memberInfo.total_memberships > 1 && 
-                              ` (${result.memberInfo.total_memberships} totale kjøp)`
-                            }
-                          </span>
-                        )}
-                        {!result.isMember && result.memberInfo?.date_paid && (
-                          <span className="text-xs text-orange-600 dark:text-orange-400">
-                            Kjøpt: {new Date(result.memberInfo.date_paid).toLocaleDateString('nb-NO')}
-                          </span>
-                        )}
-                        {!result.isMember && !result.memberInfo?.date_paid && result.apiResponse?.data && (
+                        {!result.isMember && result.apiResponse?.data && (
                           <span className="text-xs text-destructive">
                             {!result.apiResponse.data.tf_valid && !result.apiResponse.data.ntnui_valid
                               ? 'Mangler TF + NTNUI'
@@ -303,7 +290,7 @@ const MemberCheck = () => {
                               : 'Mangler NTNUI'}
                           </span>
                         )}
-                        {!result.isMember && !result.memberInfo?.date_paid && !result.apiResponse?.data && (
+                        {!result.isMember && !result.apiResponse?.data && (
                           <span className="text-xs text-destructive">
                             Ikke funnet
                           </span>
@@ -316,15 +303,6 @@ const MemberCheck = () => {
                               <CheckCircle className="w-5 h-5 text-green-500" />
                               <span className="text-sm text-green-600 dark:text-green-400 font-medium">
                                 Gyldig medlem
-                              </span>
-                            </div>
-                          </>
-                        ) : result.memberInfo?.date_paid ? (
-                          <>
-                            <div className="flex items-center gap-2">
-                              <AlertCircle className="w-5 h-5 text-orange-500" />
-                              <span className="text-sm text-orange-600 dark:text-orange-400 font-medium">
-                                Utgått medlemskap
                               </span>
                             </div>
                           </>
@@ -358,7 +336,7 @@ const MemberCheck = () => {
                 
                 {/* Summary Statistics */}
                 <div className="mt-4 p-4 bg-muted/30 rounded-lg">
-                  <div className="grid grid-cols-3 gap-4 text-sm">
+                  <div className="grid grid-cols-2 gap-4 text-sm">
                     <div className="text-center">
                       <div className="text-2xl font-bold text-green-600 dark:text-green-400">
                         {results.filter(r => r.isMember).length}
@@ -366,16 +344,10 @@ const MemberCheck = () => {
                       <div className="text-muted-foreground">Gyldige</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-                        {results.filter(r => !r.isMember && r.memberInfo?.date_paid).length}
-                      </div>
-                      <div className="text-muted-foreground">Utgått</div>
-                    </div>
-                    <div className="text-center">
                       <div className="text-2xl font-bold text-destructive">
-                        {results.filter(r => !r.isMember && !r.memberInfo?.date_paid).length}
+                        {results.filter(r => !r.isMember).length}
                       </div>
-                      <div className="text-muted-foreground">Aldri medlem</div>
+                      <div className="text-muted-foreground">Mangler medlemskap</div>
                     </div>
                   </div>
                 </div>
