@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import CsvMemberCheck from "@/components/CsvMemberCheck";
 import MemberSearch from "@/components/MemberSearch";
+import MembershipInfo from "@/components/MembershipInfo";
 
 const MemberCheck = () => {
   return (
@@ -31,6 +32,10 @@ const MemberCheck = () => {
                 <MemberSearch />
               </TabsContent>
             </Tabs>
+
+            <div className="mt-6">
+              <MembershipInfo />
+            </div>
           </CardContent>
         </Card>
       </div>
