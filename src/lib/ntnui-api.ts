@@ -15,20 +15,24 @@ export interface ApiResponse {
 }
 
 /**
- * Checks membership status for a given phone number using TF Member API
+ * Checks membership status for a single phone number.
+ *
+ * Bruker samme endepunkt som batch-sjekken med én telefon i lista: en
+ * forespørsel om ett nummer går som regel gjennom selv når en chunk på 50
+ * feiler på timeout, som er nettopp når denne funksjonen brukes.
  */
 export const checkMembership = async (
   phone: string
 ): Promise<ApiResponse> => {
   try {
-    const url = "/api/check-membership";
-    
+    const url = "/api/check-ntnui-tf-memebership";
+
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ phone })
+      body: JSON.stringify({ phones: [phone] })
     });
 
     // Sjekk om response er tom
@@ -53,9 +57,21 @@ export const checkMembership = async (
       };
     }
 
+    // Endepunktet svarer med et kart fra telefonnummer til resultat
+    const result = data[phone];
+
+    if (!result) {
+      return {
+        success: false,
+        error: 'No response for this phone number',
+        status: response.status
+      };
+    }
+
     return {
-      success: true,
-      data: data.data,
+      success: result.success === true,
+      data: result.data,
+      error: result.error,
       status: response.status
     };
 
