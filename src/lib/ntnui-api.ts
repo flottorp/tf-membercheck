@@ -166,3 +166,82 @@ export const batchCheckMembership = async (
   
   return results;
 };
+
+export interface MemberRecord {
+  phone: string;
+  name: string;
+  email: string;
+  tf_valid: boolean;
+  ntnui_valid: boolean;
+  tf_valid_until?: string;
+  ntnui_valid_until?: string;
+  last_synced?: string;
+}
+
+/**
+ * Pinger health-endepunktet for å vekke API-et (Render free tier sover ved inaktivitet).
+ * Returnerer true når API-et svarer, false ellers - kaster aldri.
+ */
+export const pingApi = async (): Promise<boolean> => {
+  try {
+    const response = await fetch("/api/health", {
+      method: 'GET',
+      headers: { 'accept': 'application/json' },
+      cache: 'no-store'
+    });
+
+    if (!response.ok) {
+      return false;
+    }
+
+    const contentType = response.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+      console.error('Non-JSON health response');
+      return false;
+    }
+
+    const data = await response.json();
+    return data.ok === true;
+  } catch (error) {
+    console.error('Health check failed:', error);
+    return false;
+  }
+};
+
+/**
+ * Søker etter medlemmer på navn eller telefonnummer
+ */
+export const searchMembers = async (
+  query: string,
+  signal?: AbortSignal
+): Promise<MemberRecord[]> => {
+  const trimmed = query.trim();
+
+  if (trimmed.length < 2) {
+    return [];
+  }
+
+  const url = `/api/search-members?q=${encodeURIComponent(trimmed)}`;
+
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: { 'accept': 'application/json' },
+    signal
+  });
+
+  const contentType = response.headers.get("content-type");
+  if (!contentType || !contentType.includes("application/json")) {
+    // Typisk en 504-side fra Vercel når API-et fortsatt sover - ikke vis rå HTML til brukeren
+    const text = await response.text();
+    console.error('Non-JSON search response:', text);
+    throw new Error("API-et svarer ikke akkurat nå. Prøv igjen om litt.");
+  }
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.error || `Søket feilet med status ${response.status}`);
+  }
+
+  return (data.results ?? []) as MemberRecord[];
+};

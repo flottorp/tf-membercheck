@@ -80,10 +80,42 @@ export default {
             height: "0",
           },
         },
+        "ski-glide": {
+          "0%": {
+            transform: "translate(20px, 47px)",
+          },
+          "100%": {
+            transform: "translate(205px, 115px)",
+          },
+        },
+        "track-slide": {
+          "0%": {
+            transform: "translateX(-100%)",
+          },
+          "100%": {
+            transform: "translateX(300%)",
+          },
+        },
+        "snow-drift": {
+          "0%": {
+            transform: "translateY(-6px)",
+            opacity: "0",
+          },
+          "20%": {
+            opacity: "1",
+          },
+          "100%": {
+            transform: "translateY(72px)",
+            opacity: "0",
+          },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "ski-glide": "ski-glide 2.8s linear infinite",
+        "snow-drift": "snow-drift 3s linear infinite",
+        "track-slide": "track-slide 2.4s ease-in-out infinite",
       },
     },
   },
