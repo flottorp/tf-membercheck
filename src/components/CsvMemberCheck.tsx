@@ -204,13 +204,13 @@ const CsvMemberCheck = () => {
           <Loader2 className="h-4 w-4 animate-spin text-primary" />
           <AlertDescription className="flex flex-col gap-2">
             <div className="flex items-center gap-2">
-              <span className="font-medium">Henter medlemskap fra webshop...</span>
+              <span className="font-medium">Sjekker medlemskap...</span>
               {elapsedTime > 0 && (
                 <span className="text-xs text-muted-foreground">({elapsedTime}s)</span>
               )}
             </div>
             <p className="text-sm text-muted-foreground">
-              Det kan ta opptil 5 minutter ved første hentering. Data blir cachet i 5 minutter for raskere søk neste gang.
+              Slår opp mot medlemsdatabasen. Første oppslag kan ta et minutt hvis API-et må vekkes.
             </p>
             <Progress 
               value={undefined} 
