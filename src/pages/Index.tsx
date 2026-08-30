@@ -55,6 +55,17 @@ const Index = () => {
           <p className="text-sm text-muted-foreground">
             En del av NTNUI - Norges Teknisk-Naturvitenskapelige Universitets Idrettsforening
           </p>
+          <p className="mt-4 text-sm text-muted-foreground">
+            Laget av{" "}
+            <a
+              href="https://github.com/flottorp"
+              target="_blank"
+              rel="noreferrer"
+              className="font-medium text-foreground underline underline-offset-4 hover:text-primary transition-colors"
+            >
+              Mats Torrey Tjøm Flottorp
+            </a>
+          </p>
         </div>
       </footer>
     </div>
